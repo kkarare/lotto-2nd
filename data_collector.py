@@ -31,21 +31,34 @@ def ensure_table(conn):
     conn.commit()
 
 
+# 글로벌 세션 객체 (연결 재사용으로 성능 및 안정성 향상)
+session = requests.Session()
+session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/javascript, */*; q=0.01',
+    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+})
+
 def get_lotto_data(drw_no):
-    """특정 회차 데이터 조회 (User-Agent 추가하여 차단 방지)"""
+    """특정 회차 데이터 조회 (세션 사용 및 상세 에러 로깅)"""
     url = f"https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={drw_no}"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
+        # 타임아웃을 15초로 넉넉하게 설정
+        resp = session.get(url, timeout=15)
         if resp.status_code != 200:
+            print(f"  [HTTP 오류] {drw_no}회차: Status {resp.status_code}", flush=True)
             return None
         data = resp.json()
         if data.get('returnValue') == 'success':
             return data
-    except Exception:
-        pass
+        else:
+            print(f"  [API 오류] {drw_no}회차: {data.get('returnValue')}", flush=True)
+    except requests.exceptions.SSLError as e:
+        print(f"  [SSL 오류] {drw_no}회차: {e}", flush=True)
+    except requests.exceptions.Timeout:
+        print(f"  [타임아웃] {drw_no}회차: 요청 시간이 초과되었습니다.", flush=True)
+    except Exception as e:
+        print(f"  [기타 오류] {drw_no}회차: {e}", flush=True)
     return None
 
 def find_latest_draw():
@@ -92,6 +105,8 @@ def collect(start_drw=1, years=None):
 
     saved = 0
     skipped = 0
+    consecutive_failures = 0
+
     for i, drw in enumerate(range(start, latest + 1)):
         # 이미 있으면 스킵
         exists = conn.execute(
@@ -118,6 +133,7 @@ def collect(start_drw=1, years=None):
                     data.get('firstPrzwnerCo', 0)
                 ))
                 saved += 1
+                consecutive_failures = 0 # 성공 시 초기화
 
                 # 진행률 표시
                 progress = ((i + 1) / total_to_fetch) * 100
@@ -125,13 +141,22 @@ def collect(start_drw=1, years=None):
                     print(f"  진행 중: {progress:.1f}% ({i+1}/{total_to_fetch}) - {drw}회차 완료", flush=True)
                     conn.commit()
 
-                time.sleep(0.7) # 차단 방지를 위해 살짝 더 여유 있게
+                time.sleep(0.5) # 세션을 사용하므로 조금 더 빠르게 조절 (0.5초)
             else:
-                print(f"  [경고] {drw}회차 데이터 수집 실패 (건너뜀)", flush=True)
-                time.sleep(1.0)
+                consecutive_failures += 1
+                print(f"  [경고] {drw}회차 수집 실패 ({consecutive_failures}연속 실패)", flush=True)
+                
+                # 연속 실패 시 대기 시간 대폭 증가 (차단 방지)
+                wait_time = min(30, 2 ** consecutive_failures)
+                print(f"  [대기] {wait_time}초 후 다시 시도합니다...", flush=True)
+                time.sleep(wait_time)
+                
+                if consecutive_failures > 15:
+                    print("[중단] 연속 실패가 너무 많아 수집을 중단합니다. 나중에 다시 시도해주세요.", flush=True)
+                    break
         except Exception as e:
             print(f"  [에러] {drw}회차 처리 중 오류 발생: {e}", flush=True)
-            time.sleep(2.0)
+            time.sleep(5.0)
 
     conn.commit()
     conn.close()
