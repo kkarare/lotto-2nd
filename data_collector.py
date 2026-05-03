@@ -101,34 +101,41 @@ def collect(start_drw=1, years=None):
             skipped += 1
             continue
 
-        data = get_lotto_data(drw)
-        if data:
-            conn.execute('''
-                INSERT OR IGNORE INTO lotto_results
-                (drw_no, drw_no_date, num1, num2, num3, num4, num5, num6,
-                 bonus_num, first_win_amnt, first_przwner_co)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
-            ''', (
-                data['drwNo'], data['drwNoDate'],
-                data['drwtNo1'], data['drwtNo2'], data['drwtNo3'],
-                data['drwtNo4'], data['drwtNo5'], data['drwtNo6'],
-                data['bnusNo'],
-                data.get('firstWinamnt', 0),
-                data.get('firstPrzwnerCo', 0)
-            ))
-            saved += 1
+        try:
+            data = get_lotto_data(drw)
+            if data:
+                conn.execute('''
+                    INSERT OR IGNORE INTO lotto_results
+                    (drw_no, drw_no_date, num1, num2, num3, num4, num5, num6,
+                     bonus_num, first_win_amnt, first_przwner_co)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                ''', (
+                    data['drwNo'], data['drwNoDate'],
+                    data['drwtNo1'], data['drwtNo2'], data['drwtNo3'],
+                    data['drwtNo4'], data['drwtNo5'], data['drwtNo6'],
+                    data['bnusNo'],
+                    data.get('firstWinamnt', 0),
+                    data.get('firstPrzwnerCo', 0)
+                ))
+                saved += 1
 
-            # 진행률 표시
-            progress = ((i + 1) / total_to_fetch) * 100
-            if (i + 1) % 10 == 0 or (i + 1) == total_to_fetch:
-                print(f"  진행 중: {progress:.1f}% ({i+1}/{total_to_fetch}) - {drw}회차 완료")
-                conn.commit()
+                # 진행률 표시
+                progress = ((i + 1) / total_to_fetch) * 100
+                if (i + 1) % 10 == 0 or (i + 1) == total_to_fetch:
+                    print(f"  진행 중: {progress:.1f}% ({i+1}/{total_to_fetch}) - {drw}회차 완료", flush=True)
+                    conn.commit()
 
-            time.sleep(0.3) # 차단 방지를 위해 살짝 여유 있게
+                time.sleep(0.7) # 차단 방지를 위해 살짝 더 여유 있게
+            else:
+                print(f"  [경고] {drw}회차 데이터 수집 실패 (건너뜀)", flush=True)
+                time.sleep(1.0)
+        except Exception as e:
+            print(f"  [에러] {drw}회차 처리 중 오류 발생: {e}", flush=True)
+            time.sleep(2.0)
 
     conn.commit()
     conn.close()
-    print(f"\n[수집 완료] 신규 저장: {saved}회차 (중복 스킵: {skipped}회차)")
+    print(f"\n[수집 완료] 신규 저장: {saved}회차 (중복 스킵: {skipped}회차)", flush=True)
 
 def update_to_latest():
     """DB의 마지막 회차부터 최신 회차까지 업데이트합니다."""
