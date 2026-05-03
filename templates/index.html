@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lucky Bright - 로또 2등 예측</title>
+
+    <!-- ===== SEO & 기본 메타 ===== -->
+    <meta name="description" content="AI가 분석한 로또 2등 당첨 예측 번호를 제공하는 앱입니다.">
+
+    <!-- ===== PWA 설정 ===== -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#4F46E5">
+
+    <!-- iOS PWA 홈화면 아이콘 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Lucky Bright">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/static/icons/icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="/static/icons/icon-128x128.png">
+
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192x192.png">
+
+    <!-- ===== 스타일 ===== -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Pretendard 폰트 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+</head>
+<body>
+    <div id="app">
+        <!-- 헤더 -->
+        <header class="main-header">
+            <h1>🍀 Lucky Bright</h1>
+            <div class="status-badge" id="app-status">📡 연결 중...</div>
+        </header>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <main id="content">
+            <!-- 홈 탭: 번호 생성 -->
+            <section id="tab-home" class="tab-content active">
+                <div class="hero-section">
+                    <h2>오늘의 행운 번호</h2>
+                    <p>AI가 분석한 2등 당첨 예측 조합입니다.</p>
+                </div>
+                
+                <div class="lotto-display" id="generated-numbers">
+                    <div class="ball-placeholder">생성 버튼을 눌러주세요</div>
+                </div>
+
+                <div class="analysis-card" id="prediction-info" style="display: none;">
+                    <div class="score-box">
+                        <span class="label">예측 신뢰도</span>
+                        <span class="score" id="prediction-score">95%</span>
+                    </div>
+                    <p class="analysis-text" id="analysis-text"></p>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="btn-generate" class="btn-primary">✨ 신규 번호 생성</button>
+                    <button id="btn-save" class="btn-secondary" disabled>💾 이 번호 저장하기</button>
+                </div>
+
+                <p class="disclaimer">※ 본 서비스는 통계 분석 기반의 참고 자료이며, 당첨을 보장하지 않습니다.</p>
+            </section>
+
+            <!-- 필터 탭 -->
+            <section id="tab-filter" class="tab-content">
+                <h3>번호 필터 설정</h3>
+                <p class="sub-text">1회 탭: 포함 (초록) / 2회 탭: 제외 (빨강) / 3회 탭: 해제</p>
+                
+                <div class="filter-status">
+                    <div class="filter-item">
+                        <span>✅ 포함 (최대 3개):</span>
+                        <div id="include-tags" class="tags"></div>
+                    </div>
+                    <div class="filter-item">
+                        <span>❌ 제외 (최대 5개):</span>
+                        <div id="exclude-tags" class="tags"></div>
+                    </div>
+                </div>
+
+                <div class="number-grid" id="filter-grid">
+                    <!-- 1~45 번호판 JS로 생성 -->
+                </div>
+
+                <button id="btn-reset-filter" class="btn-secondary" style="margin-top:15px;">🔄 필터 초기화</button>
+            </section>
+
+            <!-- 저장함 탭 -->
+            <section id="tab-saved" class="tab-content">
+                <h3>💾 내 저장 번호</h3>
+                <div id="saved-list" class="list-container">
+                    <p class="empty-msg">저장된 번호가 없습니다.</p>
+                </div>
+            </section>
+
+            <!-- 통계 탭 -->
+            <section id="tab-stats" class="tab-content">
+                <h3>📊 통계 데이터</h3>
+                
+                <div class="card" style="margin-bottom:20px; border:2px dashed var(--primary-light);">
+                    <h4 style="margin-top:0;">📡 데이터 동기화</h4>
+                    <p style="font-size:0.8rem; color:var(--text-sub); margin-bottom:12px;">
+                        최신 당첨 번호를 인터넷에서 자동으로 가져옵니다. <br>
+                        (매주 토요일 밤 추첨 후 자동으로 업데이트되지만, 수동으로도 가능합니다.)
+                    </p>
+                    <button id="btn-manual-update" class="btn-primary" style="width:100%; padding:10px;">✨ 지금 최신 데이터로 업데이트</button>
+                </div>
+
+                <!-- 엑셀 데이터 업로드 섹션 -->
+                <div class="card" style="margin-bottom:20px; border:2px dashed var(--primary-light);">
+                    <h4 style="margin-top:0;">📁 빠른 데이터 충전 (엑셀)</h4>
+                    <p style="font-size:0.8rem; color:var(--text-sub); margin-bottom:12px;">
+                        동행복권 홈페이지에서 '당첨결과(엑셀)'를 다운로드 후 업로드하세요. <br>
+                        <a href="https://www.dhlottery.co.kr/gameResult.do?method=byWin" target="_blank" style="color:var(--primary); font-weight:700;">[동행복권 다운로드 페이지 이동]</a>
+                    </p>
+                    <div style="display:flex; gap:10px;">
+                        <input type="file" id="excel-file" accept=".xlsx, .xls" style="font-size:0.8rem; flex:1;">
+                        <button id="btn-upload-excel" class="btn-primary" style="padding:8px 15px; font-size:0.85rem;">업로드</button>
+                    </div>
+                </div>
+
+                <div class="stats-cards">
+                    <div class="card">
+                        <h4>🔥 핫 넘버 (자주 나온 번호)</h4>
+                        <div id="hot-numbers" class="mini-balls"></div>
+                    </div>
+                    <div class="card" style="margin-top:12px;">
+                        <h4>❄️ 콜드 넘버 (오래 안 나온 번호)</h4>
+                        <div id="cold-numbers" class="mini-balls"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 당첨확인 탭 -->
+            <section id="tab-check" class="tab-content">
+                <h3>🔔 당첨 확인</h3>
+                <div class="latest-draw-card card" id="latest-draw-info">
+                    <p>최신 회차 정보를 불러오는 중...</p>
+                </div>
+                <div id="win-check-results" class="list-container" style="margin-top:15px;">
+                    <!-- 결과 리스트 -->
+                </div>
+            </section>
+        </main>
+
+        <!-- 하단 네비게이션 탭바 -->
+        <nav class="tab-bar">
+            <a href="#home"   class="tab-link active" data-tab="home">🏠<span>홈</span></a>
+            <a href="#filter" class="tab-link"         data-tab="filter">🎯<span>필터</span></a>
+            <a href="#saved"  class="tab-link"         data-tab="saved">💾<span>저장</span></a>
+            <a href="#stats"  class="tab-link"         data-tab="stats">📊<span>통계</span></a>
+            <a href="#check"  class="tab-link"         data-tab="check">🔔<span>당첨</span></a>
+        </nav>
+    </div>
+
+    <!-- ===== 스크립트 ===== -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <!-- PWA Service Worker 등록 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // /sw.js는 루트 경로에서 서빙되어 전체 앱을 커버함
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('[PWA] Service Worker 등록 완료:', reg.scope))
+                    .catch(err => console.log('[PWA] Service Worker 등록 실패:', err));
+            });
+        }
+    </script>
+</body>
+</html>

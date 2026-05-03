@@ -1,0 +1,9 @@
+Flask
+pandas
+numpy
+scikit-learn
+requests
+Flask-SQLAlchemy
+Flask-APScheduler
+openpyxl
+gunicorn
