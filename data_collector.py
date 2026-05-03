@@ -107,7 +107,8 @@ def collect(start_drw=1, years=None):
     skipped = 0
     consecutive_failures = 0
 
-    for i, drw in enumerate(range(start, latest + 1)):
+    # 최신 회차부터 역순으로 수집 (최신 데이터가 더 잘 받아지는 경향이 있음)
+    for i, drw in enumerate(range(latest, start - 1, -1)):
         # 이미 있으면 스킵
         exists = conn.execute(
             'SELECT 1 FROM lotto_results WHERE drw_no = ?', (drw,)
@@ -141,18 +142,18 @@ def collect(start_drw=1, years=None):
                     print(f"  진행 중: {progress:.1f}% ({i+1}/{total_to_fetch}) - {drw}회차 완료", flush=True)
                     conn.commit()
 
-                time.sleep(0.5) # 세션을 사용하므로 조금 더 빠르게 조절 (0.5초)
+                time.sleep(0.8) # 차단 방지를 위해 약간 더 여유 있게 (0.8초)
             else:
                 consecutive_failures += 1
                 print(f"  [경고] {drw}회차 수집 실패 ({consecutive_failures}연속 실패)", flush=True)
                 
-                # 연속 실패 시 대기 시간 대폭 증가 (차단 방지)
-                wait_time = min(30, 2 ** consecutive_failures)
+                # 연속 실패 시 대기 시간 대폭 증가
+                wait_time = min(60, 5 * consecutive_failures) 
                 print(f"  [대기] {wait_time}초 후 다시 시도합니다...", flush=True)
                 time.sleep(wait_time)
                 
-                if consecutive_failures > 15:
-                    print("[중단] 연속 실패가 너무 많아 수집을 중단합니다. 나중에 다시 시도해주세요.", flush=True)
+                if consecutive_failures > 10:
+                    print("[중단] 연속 실패가 너무 많아 수집을 잠시 중단합니다.", flush=True)
                     break
         except Exception as e:
             print(f"  [에러] {drw}회차 처리 중 오류 발생: {e}", flush=True)
