@@ -44,6 +44,18 @@ def service_worker():
     return send_from_directory('static', 'service-worker.js',
                                mimetype='application/javascript')
 
+# ===== Google TWA 인증 (Digital Asset Links) =====
+@app.route('/.well-known/assetlinks.json')
+def asset_links():
+    """구글 플레이 스토어 앱 연동 인증 파일"""
+    return send_from_directory('.well-known', 'assetlinks.json',
+                               mimetype='application/json')
+
+@app.route('/privacy')
+def privacy():
+    """구글 플레이 스토어 필수: 개인정보 처리방침"""
+    return render_template('privacy.html')
+
 @app.route('/')
 def index():
     return render_template('index.html')

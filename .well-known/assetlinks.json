@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.luckybright.lotto",
+      "sha256_cert_fingerprints": [
+        "E5:A4:4F:71:17:E6:74:F1:56:9F:8A:B2:A7:79:8E:EF:35:D7:23:A8:C3:E1:46:23:D8:F1:7C:E9:AD:9A:1D:8D"
+      ]
+    }
+  }
+]
