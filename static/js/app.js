@@ -221,15 +221,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 로또볼 렌더링 (순차 애니메이션) ---
+    let ballTimers = [];
     function renderBalls(numbers) {
+        // 이전 타이머 모두 취소
+        ballTimers.forEach(t => clearTimeout(t));
+        ballTimers = [];
+        
         genDisplay.innerHTML = '';
         numbers.forEach((num, index) => {
-            setTimeout(() => {
+            const timer = setTimeout(() => {
                 const ball = document.createElement('div');
                 ball.className = `lotto-ball ${getBallColorClass(num)}`;
                 ball.textContent = num;
                 genDisplay.appendChild(ball);
             }, index * 120);
+            ballTimers.push(timer);
         });
     }
 
