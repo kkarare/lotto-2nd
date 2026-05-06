@@ -139,8 +139,8 @@ body {
     padding: 35px 15px;
     display: flex;
     justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 6px;
+    flex-wrap: nowrap; /* 6개가 한 줄에 나오도록 래핑 방지 */
     border: 1px solid var(--gray);
     margin-bottom: 24px;
     min-height: 130px;
@@ -155,15 +155,15 @@ body {
 }
 
 .lotto-ball {
-    width: 52px;
-    height: 52px;
+    width: 48px; /* 52px -> 48px로 축소 */
+    height: 48px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #000;
     font-weight: 900;
-    font-size: 1.2rem;
+    font-size: 1.1rem; /* 1.2rem -> 1.1rem */
     background: var(--gold-gradient);
     box-shadow: 0 5px 15px rgba(0,0,0,0.4), inset 0 -2px 5px rgba(0,0,0,0.3);
     border: 1px solid rgba(255,255,255,0.2);
@@ -373,4 +373,17 @@ button:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important;
     color: var(--text-sub);
     font-size: 1rem;
     margin-top: 60px;
+}
+
+/* ===== 모바일 소형 화면 대응 ===== */
+@media (max-width: 360px) {
+    .lotto-ball {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+    .lotto-display {
+        gap: 4px;
+        padding: 30px 10px;
+    }
 }

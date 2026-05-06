@@ -3,7 +3,7 @@
    오프라인 캐싱으로 기본 화면을 유지합니다.
    ==================================================== */
 
-const CACHE_NAME = 'lucky-bright-v2';
+const CACHE_NAME = 'lucky-bright-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/css/style.css',
