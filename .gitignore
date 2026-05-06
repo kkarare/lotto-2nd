@@ -31,3 +31,6 @@ twa-manifest.json
 manifest-checksum.txt
 *.aab
 *.apk
+
+# Scratch files
+scratch/

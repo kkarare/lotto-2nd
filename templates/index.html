@@ -10,11 +10,11 @@
 
     <!-- ===== PWA 설정 ===== -->
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#4F46E5">
+    <meta name="theme-color" content="#020617">
 
     <!-- iOS PWA 홈화면 아이콘 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Lucky Bright">
     <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152x152.png">
@@ -45,27 +45,34 @@
             <section id="tab-home" class="tab-content active">
                 <div class="hero-section">
                     <h2>오늘의 행운 번호</h2>
-                    <p>AI가 분석한 2등 당첨 예측 조합입니다.</p>
+                    <p>AI가 분석한 당첨 예측 조합입니다.</p>
                 </div>
                 
-                <div class="lotto-display" id="generated-numbers">
-                    <div class="ball-placeholder">생성 버튼을 눌러주세요</div>
-                </div>
+                <!-- 태블릿에서는 좌우로 배치될 그리드 -->
+                <div class="home-main-layout">
+                    <div class="generator-side">
+                        <div class="lotto-display" id="generated-numbers">
+                            <div class="ball-placeholder">생성 버튼을 눌러주세요</div>
+                        </div>
 
-                <div class="analysis-card" id="prediction-info" style="display: none;">
-                    <div class="score-box">
-                        <span class="label">예측 신뢰도</span>
-                        <span class="score" id="prediction-score">95%</span>
+                        <div class="action-buttons">
+                            <button id="btn-generate" class="btn-primary">✨ 신규 번호 생성</button>
+                            <button id="btn-save" class="btn-secondary" disabled>💾 이 번호 저장하기</button>
+                        </div>
                     </div>
-                    <p class="analysis-text" id="analysis-text"></p>
-                </div>
 
-                <div class="action-buttons">
-                    <button id="btn-generate" class="btn-primary">✨ 신규 번호 생성</button>
-                    <button id="btn-save" class="btn-secondary" disabled>💾 이 번호 저장하기</button>
+                    <div class="analysis-side">
+                        <div class="analysis-card" id="prediction-info" style="display: none;">
+                            <div class="score-box">
+                                <span class="label">예측 신뢰도</span>
+                                <span class="score" id="prediction-score">95%</span>
+                            </div>
+                            <p class="analysis-text" id="analysis-text"></p>
+                        </div>
+                        
+                        <p class="disclaimer">※ 본 서비스는 통계 분석 기반의 참고 자료이며, 당첨을 보장하지 않습니다.</p>
+                    </div>
                 </div>
-
-                <p class="disclaimer">※ 본 서비스는 통계 분석 기반의 참고 자료이며, 당첨을 보장하지 않습니다.</p>
             </section>
 
             <!-- 필터 탭 -->

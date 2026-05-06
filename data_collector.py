@@ -62,29 +62,27 @@ def get_lotto_data(drw_no):
     return None
 
 def find_latest_draw():
-    """1150회부터 순차 탐색으로 최신 회차 확인"""
+    """1160회부터 순차 탐색으로 최신 회차 확인 (탐색 범위 확대)"""
     print("[탐색] 최신 회차 확인 중...")
-    curr = 1100
-    while True:
+    # 최근 회차를 기준으로 탐색 시작점 조정
+    curr = 1100 
+    max_fail = 3
+    fail_count = 0
+    
+    while fail_count < max_fail:
         data = get_lotto_data(curr + 1)
         if data:
             curr += 1
+            fail_count = 0 # 성공 시 초기화
         else:
-            # 일시적 오류 방지: 한 번 더 확인
-            time.sleep(0.5)
-            data2 = get_lotto_data(curr + 1)
-            if data2:
-                curr += 1
-            else:
-                break
+            fail_count += 1
+            time.sleep(1.0)
+            
     print(f"[탐색 완료] 최신 회차: {curr}회")
     return curr
 
 def collect(start_drw=1, years=None):
-    """
-    지정한 범위의 데이터를 수집합니다.
-    years가 지정되면 최신 회차부터 해당 기간만큼 역산하여 수집합니다.
-    """
+    """지정한 범위의 데이터를 수집합니다. (안정성 강화)"""
     conn = sqlite3.connect(DB_PATH)
     ensure_table(conn)
 
@@ -94,29 +92,31 @@ def collect(start_drw=1, years=None):
         conn.close()
         return
 
+    # 수집 시작점 결정
     if years:
         count_to_collect = years * 52
         start = max(1, latest - count_to_collect + 1)
     else:
         start = start_drw
 
-    total_to_fetch = latest - start + 1
-    print(f"[수집 범위] {start}회 ~ {latest}회 (총 {total_to_fetch}회차)\n")
+    # 중복되지 않은 회차만 필터링해서 작업량 계산
+    rows = conn.execute('SELECT drw_no FROM lotto_results WHERE drw_no BETWEEN ? AND ?', (start, latest)).fetchall()
+    existing_nos = {r[0] for r in rows}
+    
+    targets = [d for d in range(latest, start - 1, -1) if d not in existing_nos]
+    total_targets = len(targets)
+    
+    if total_targets == 0:
+        print("[알림] 이미 모든 데이터가 최신 상태입니다.")
+        conn.close()
+        return
+
+    print(f"[수집 시작] 신규 {total_targets}회차 수집 예정 ({start}회 ~ {latest}회)\n")
 
     saved = 0
-    skipped = 0
     consecutive_failures = 0
 
-    # 최신 회차부터 역순으로 수집 (최신 데이터가 더 잘 받아지는 경향이 있음)
-    for i, drw in enumerate(range(latest, start - 1, -1)):
-        # 이미 있으면 스킵
-        exists = conn.execute(
-            'SELECT 1 FROM lotto_results WHERE drw_no = ?', (drw,)
-        ).fetchone()
-        if exists:
-            skipped += 1
-            continue
-
+    for i, drw in enumerate(targets):
         try:
             data = get_lotto_data(drw)
             if data:
@@ -134,34 +134,29 @@ def collect(start_drw=1, years=None):
                     data.get('firstPrzwnerCo', 0)
                 ))
                 saved += 1
-                consecutive_failures = 0 # 성공 시 초기화
+                consecutive_failures = 0
 
-                # 진행률 표시
-                progress = ((i + 1) / total_to_fetch) * 100
-                if (i + 1) % 10 == 0 or (i + 1) == total_to_fetch:
-                    print(f"  진행 중: {progress:.1f}% ({i+1}/{total_to_fetch}) - {drw}회차 완료", flush=True)
+                if (i + 1) % 5 == 0 or (i + 1) == total_targets:
+                    print(f"  진행: {((i+1)/total_targets*100):.1f}% ({i+1}/{total_targets}) - {drw}회차 완료", flush=True)
                     conn.commit()
 
-                time.sleep(0.8) # 차단 방지를 위해 약간 더 여유 있게 (0.8초)
+                time.sleep(1.2) # 속도보다는 안정성! (1.2초)
             else:
                 consecutive_failures += 1
-                print(f"  [경고] {drw}회차 수집 실패 ({consecutive_failures}연속 실패)", flush=True)
-                
-                # 연속 실패 시 대기 시간 대폭 증가
-                wait_time = min(60, 5 * consecutive_failures) 
-                print(f"  [대기] {wait_time}초 후 다시 시도합니다...", flush=True)
+                wait_time = min(300, 10 * consecutive_failures) 
+                print(f"  [대기] {drw}회차 실패. {wait_time}초 후 재시도... ({consecutive_failures}/5)", flush=True)
                 time.sleep(wait_time)
                 
-                if consecutive_failures > 10:
-                    print("[중단] 연속 실패가 너무 많아 수집을 잠시 중단합니다.", flush=True)
+                if consecutive_failures >= 5:
+                    print("[중단] 연속 실패로 인해 작업을 중단합니다. 나중에 다시 시도해주세요.")
                     break
         except Exception as e:
-            print(f"  [에러] {drw}회차 처리 중 오류 발생: {e}", flush=True)
-            time.sleep(5.0)
+            print(f"  [에러] {drw}회차 처리 중 오류: {e}")
+            time.sleep(5)
 
     conn.commit()
     conn.close()
-    print(f"\n[수집 완료] 신규 저장: {saved}회차 (중복 스킵: {skipped}회차)", flush=True)
+    print(f"\n[수집 종료] 이번 작업으로 {saved}개 회차가 업데이트되었습니다.")
 
 def update_to_latest():
     """DB의 마지막 회차부터 최신 회차까지 업데이트합니다."""
