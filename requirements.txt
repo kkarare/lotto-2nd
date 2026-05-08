@@ -7,3 +7,4 @@ Flask-SQLAlchemy
 Flask-APScheduler
 openpyxl
 gunicorn
+flask-cors

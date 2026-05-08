@@ -4,9 +4,11 @@ from prediction_engine import prediction_engine
 import os
 import data_collector
 from flask_apscheduler import APScheduler
+from flask_cors import CORS
 import threading
 
 app = Flask(__name__)
+CORS(app) # 모든 경로에 대해 CORS 허용 (모바일 앱 연동용)
 
 # 데이터베이스 설정
 # Railway 배포 시 환경 변수 DATABASE_PATH를 /data/lotto.db 등으로 설정하여 데이터를 보존할 수 있습니다.

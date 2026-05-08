@@ -90,16 +90,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/status');
             if (!res.ok) throw new Error('Server unreachable');
             const data = await res.json();
-            state.status = data;
+            state.status = { ...data, online: true }; // 온라인 상태 명시
             statusBadge.textContent = data.latest_draw
                 ? `✅ ${data.latest_draw}회차 연결됨`
                 : '📡 데이터 준비 중...';
             statusBadge.style.background = 'var(--success-light)';
             statusBadge.style.color = 'var(--success)';
         } catch (e) {
-            statusBadge.textContent = '⚠️ 오프라인 모드';
+            statusBadge.textContent = '⚠️ 연결 확인 중';
             statusBadge.style.background = '#FEE2E2';
             statusBadge.style.color = '#B91C1C';
+            state.status.online = false; // 오프라인 상태 명시
             console.log('Status check failed: Using offline fallback');
         }
     }
@@ -184,16 +185,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(data.error || 'Generation failed');
             }
         } catch (e) {
-            console.warn('Offline mode: Generating numbers locally');
+            console.error('Generation Error:', e);
+            
             // 오프라인 로컬 생성 로직
             const localNums = generateLocalNumbers(state.includeNums, state.excludeNums);
+            
+            // 서버는 살아있는데 요청만 실패한 경우와 진짜 오프라인 구분
+            const isActuallyOffline = !state.status.online;
+            const errorMsg = isActuallyOffline 
+                ? '⚠️ 오프라인 모드입니다. 서버 연결 시 더 정밀한 AI 분석이 가능합니다.'
+                : '⚠️ 서버 분석 오류로 인해 로컬 알고리즘으로 생성되었습니다.';
+                
             const localResult = {
                 numbers: localNums,
                 score: Math.floor(Math.random() * 20) + 60, // 60~80점
-                analysis: '⚠️ 오프라인 모드입니다. 서버 연결 시 더 정밀한 AI 분석이 가능합니다.'
+                analysis: errorMsg
             };
             renderGenerated(localResult);
-            showToast('⚠️ 오프라인 모드로 생성되었습니다.');
+            showToast(isActuallyOffline ? '⚠️ 오프라인 모드로 생성' : '⚠️ 서버 오류: 로컬 생성');
         } finally {
             btnGenerate.disabled = false;
         }
