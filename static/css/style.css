@@ -387,3 +387,38 @@ button:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important;
         padding: 30px 10px;
     }
 }
+
+/* ===== 로또볼 색상 클래스 (저장함/통계에서도 사용) ===== */
+.ball-yellow {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4);
+}
+.ball-blue {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.4);
+}
+.ball-red {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
+}
+.ball-gray {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(100, 116, 139, 0.4);
+}
+.ball-green {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
+}
+
+/* lotto-ball과 조합 시 색상 오버라이드 */
+.lotto-ball.ball-yellow { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #000; }
+.lotto-ball.ball-blue   { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; }
+.lotto-ball.ball-red    { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
+.lotto-ball.ball-gray   { background: linear-gradient(135deg, #64748b, #94a3b8); color: #fff; }
+.lotto-ball.ball-green  { background: linear-gradient(135deg, #10b981, #34d399); color: #000; }
+

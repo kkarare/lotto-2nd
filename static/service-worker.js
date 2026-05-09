@@ -3,7 +3,7 @@
    오프라인 캐싱으로 기본 화면을 유지합니다.
    ==================================================== */
 
-const CACHE_NAME = 'lucky-bright-v4'; // v4: 온라인 모드 복구, 관리자 패널 추가
+const CACHE_NAME = 'lucky-bright-v5'; // v5: 저장함 번호 볼 색상 버그 수정
 const ASSETS_TO_CACHE = [
   '/',
   '/static/css/style.css',

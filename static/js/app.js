@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (allSaved.length > 0) {
             savedList.innerHTML = allSaved.map(item => `
-                <div style="background:white; border-radius:16px; padding:15px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.06); position:relative;">
+                <div style="background:var(--card-bg); border-radius:16px; padding:15px; margin-bottom:10px; border:1px solid var(--gray); position:relative;">
                     ${item.is_local ? '<span style="position:absolute; top:10px; right:10px; font-size:0.65rem; color:var(--primary); background:var(--primary-light); padding:2px 5px; border-radius:4px;">내 폰 저장</span>' : ''}
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <span style="font-size:0.8rem; color:var(--text-sub);">📅 ${item.date}</span>
@@ -350,13 +350,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                         ${item.numbers.map(n => `
-                            <div class="${getBallColorClass(n)}" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.78rem;font-weight:800;">
+                            <div class="lotto-ball ${getBallColorClass(n)}" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:900;">
                                 ${n}
                             </div>
                         `).join('')}
                     </div>
                 </div>
             `).join('');
+
         } else {
             savedList.innerHTML = '<p class="empty-msg">저장된 번호가 없습니다.</p>';
         }
