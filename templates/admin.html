@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Lucky Bright - 개발자 관리 패널</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #1e3a5f, #312e81);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid #4f46e5;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .admin-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #a5b4fc;
+            font-weight: 700;
+        }
+        .admin-badge {
+            background: #dc2626;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.05em;
+        }
+        .admin-content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+        .admin-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #334155;
+        }
+        .admin-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+            color: #a5b4fc;
+        }
+        .admin-card p {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            margin: 0 0 14px 0;
+            line-height: 1.5;
+        }
+        .btn-admin-primary {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+        .btn-admin-primary:hover { opacity: 0.85; }
+        .btn-admin-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-admin-danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+        .btn-admin-danger:hover { opacity: 0.85; }
+        .file-input-wrap {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .file-input-wrap input[type="file"] {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 10px;
+            color: #e2e8f0;
+            padding: 8px;
+            font-size: 0.82rem;
+        }
+        .result-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            min-height: 48px;
+            margin-top: 10px;
+            line-height: 1.5;
+            display: none;
+        }
+        .result-box.show { display: block; }
+        .result-box.success { color: #4ade80; border-color: #166534; }
+        .result-box.error { color: #f87171; border-color: #991b1b; }
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            display: inline-block;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .info-item {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+        .info-item .val {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #818cf8;
+        }
+        .info-item .lbl {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            animation: fadeUp 0.3s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translate(-50%, 10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <div>
+            <h1>🔐 개발자 관리 패널</h1>
+        </div>
+        <span class="admin-badge">ADMIN ONLY</span>
+    </div>
+
+    <div class="admin-content">
+
+        <!-- 서버 상태 카드 -->
+        <div class="admin-card">
+            <h3>📡 서버 상태</h3>
+            <div class="status-row">
+                <span><span class="status-dot" id="status-dot"></span><span id="status-text">확인 중...</span></span>
+                <button onclick="refreshStatus()" style="background:none;border:1px solid #475569;color:#94a3b8;padding:4px 12px;border-radius:8px;cursor:pointer;font-size:0.75rem;">새로고침</button>
+            </div>
+            <div class="info-grid" id="info-grid">
+                <div class="info-item">
+                    <div class="val" id="info-latest">—</div>
+                    <div class="lbl">최신 회차</div>
+                </div>
+                <div class="info-item">
+                    <div class="val" id="info-total">—</div>
+                    <div class="lbl">총 데이터 수</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 자동 업데이트 정보 카드 -->
+        <div class="admin-card">
+            <h3>🔄 자동 업데이트 스케줄</h3>
+            <p>매주 <strong style="color:#a5b4fc;">일요일 00:05</strong> 자동으로 최신 당첨 번호를 수집합니다.<br>
+            일반 사용자는 항상 최신 통계 데이터를 자동으로 제공받습니다.</p>
+        </div>
+
+        <!-- 수동 데이터 업데이트 카드 -->
+        <div class="admin-card">
+            <h3>✨ 수동 데이터 업데이트</h3>
+            <p>오류 발생 시 또는 즉시 최신 데이터가 필요한 경우 수동으로 수집합니다.<br>
+            (약 10~30초 소요될 수 있습니다.)</p>
+            <button class="btn-admin-primary" id="btn-manual-update" onclick="manualUpdate()">
+                ⬇️ 지금 최신 데이터 수집
+            </button>
+            <div class="result-box" id="update-result"></div>
+        </div>
+
+        <!-- 엑셀 업로드 카드 -->
+        <div class="admin-card">
+            <h3>📁 빠른 데이터 충전 (엑셀)</h3>
+            <p>동행복권 홈페이지에서 '당첨결과(엑셀)'를 다운로드 후 업로드하세요.<br>
+            <a href="https://www.dhlottery.co.kr/gameResult.do?method=byWin" target="_blank"
+               style="color:#818cf8; font-weight:700;">[동행복권 다운로드 페이지 이동]</a></p>
+            <div class="file-input-wrap">
+                <input type="file" id="excel-file" accept=".xlsx, .xls">
+            </div>
+            <button class="btn-admin-primary" onclick="uploadExcel()">
+                📤 엑셀 업로드
+            </button>
+            <div class="result-box" id="upload-result"></div>
+        </div>
+
+        <!-- 앱으로 돌아가기 -->
+        <a href="/" style="display:block; text-align:center; color:#64748b; font-size:0.82rem; margin-top:20px; text-decoration:none;">
+            ← 일반 사용자 앱으로 돌아가기
+        </a>
+    </div>
+
+    <script>
+        // 개발자 키 (서버에서 안전하게 주입)
+        const ADMIN_KEY = '{{ admin_key }}';
+
+        // ===== 서버 상태 확인 =====
+        async function refreshStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                document.getElementById('status-dot').style.background = '#4ade80';
+                document.getElementById('status-text').textContent = '온라인 ✅';
+                document.getElementById('info-latest').textContent = data.latest_draw ? `${data.latest_draw}회` : '—';
+                document.getElementById('info-total').textContent = data.total_data ?? '—';
+            } catch (e) {
+                document.getElementById('status-dot').style.background = '#ef4444';
+                document.getElementById('status-dot').style.animation = 'none';
+                document.getElementById('status-text').textContent = '오프라인 ⚠️';
+            }
+        }
+
+        // ===== 수동 업데이트 =====
+        async function manualUpdate() {
+            const btn = document.getElementById('btn-manual-update');
+            const result = document.getElementById('update-result');
+            btn.disabled = true;
+            btn.textContent = '⏳ 수집 중... (잠시 기다려 주세요)';
+            result.className = 'result-box show';
+            result.textContent = '서버에서 최신 데이터를 가져오는 중입니다...';
+
+            try {
+                const res = await fetch('/api/admin/update_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Key': ADMIN_KEY
+                    },
+                    body: JSON.stringify({ admin_key: ADMIN_KEY })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    result.className = 'result-box show success';
+                    result.textContent = '✅ ' + data.message;
+                    showToast('✅ 데이터 업데이트 완료!');
+                    refreshStatus();
+                } else {
+                    result.className = 'result-box show error';
+                    result.textContent = '❌ 오류: ' + data.error;
+                }
+            } catch (e) {
+                result.className = 'result-box show error';
+                result.textContent = '❌ 서버 연결 오류: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⬇️ 지금 최신 데이터 수집';
+            }
+        }
+
+        // ===== 엑셀 업로드 =====
+        async function uploadExcel() {
+            const fileInput = document.getElementById('excel-file');
+            const result = document.getElementById('upload-result');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showToast('❌ 파일을 먼저 선택해주세요!');
+                return;
+            }
+
+            result.className = 'result-box show';
+            result.textContent = '업로드 중...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch(`/api/upload_excel?key=${ADMIN_KEY}`, {
+                    method: 'POST',
+                    headers: { 'X-Admin-Key': ADMIN_KEY },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    result.className = 'result-box show success';
+                    result.textContent = `✅ ${data.count}개 회차 데이터가 추가되었습니다!`;
+                    showToast(`✅ ${data.count}개 회차 추가 완료!`);
+                    fileInput.value = '';
+                    refreshStatus();
+                } else {
+                    result.className = 'result-box show error';
+                    result.textContent = '❌ 업로드 실패: ' + data.error;
+                }
+            } catch (e) {
+                result.className = 'result-box show error';
+                result.textContent = '❌ 연결 오류: ' + e.message;
+            }
+        }
+
+        // ===== 토스트 메시지 =====
+        function showToast(msg) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // 페이지 로드 시 상태 확인
+        refreshStatus();
+    </script>
+</body>
+</html>

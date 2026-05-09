@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask import Flask, render_template, jsonify, request, send_from_directory, abort
 from database import db, init_db, LottoResult, SavedNumber
 from prediction_engine import prediction_engine
 import os
@@ -6,9 +6,29 @@ import data_collector
 from flask_apscheduler import APScheduler
 from flask_cors import CORS
 import threading
+import functools
 
 app = Flask(__name__)
 CORS(app) # 모든 경로에 대해 CORS 허용 (모바일 앱 연동용)
+
+# ===== 개발자 전용 관리 시크릿 키 =====
+# 환경 변수로 설정하거나 기본값 사용 (Railway 환경 변수에도 동일하게 설정 필요)
+ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'luckybright2024admin')
+
+def require_admin(f):
+    """개발자 전용 API 접근 제한 데코레이터"""
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        # POST body의 'admin_key' 또는 헤더 'X-Admin-Key' 또는 쿼리파라미터 'key' 확인
+        admin_key = (
+            request.headers.get('X-Admin-Key') or
+            (request.json or {}).get('admin_key') or
+            request.args.get('key')
+        )
+        if admin_key != ADMIN_SECRET:
+            abort(403)  # 권한 없음
+        return f(*args, **kwargs)
+    return decorated
 
 # 데이터베이스 설정
 # Railway 배포 시 환경 변수 DATABASE_PATH를 /data/lotto.db 등으로 설정하여 데이터를 보존할 수 있습니다.
@@ -148,9 +168,19 @@ def get_stats():
 
 import pandas as pd
 
+# ===== 개발자 관리 패널 라우트 =====
+@app.route('/admin')
+def admin_panel():
+    """개발자 전용 관리 패널 (쿼리 파라미터 key 확인)"""
+    key = request.args.get('key', '')
+    if key != ADMIN_SECRET:
+        abort(403)
+    return render_template('admin.html', admin_key=ADMIN_SECRET)
+
 @app.route('/api/upload_excel', methods=['POST'])
+@require_admin
 def upload_excel():
-    """엑셀 파일을 통한 대량 데이터 업로드"""
+    """엑셀 파일을 통한 대량 데이터 업로드 (개발자 전용)"""
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "No file"}), 400
     
@@ -215,11 +245,11 @@ def upload_excel():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/admin/update_data', methods=['POST'])
+@require_admin
 def manual_update():
-    """수동 데이터 업데이트 트리거"""
+    """수동 데이터 업데이트 트리거 (개발자 전용)"""
     try:
         # 백그라운드 스레드 대신 동기적으로 실행하여 결과를 알려줌
-        # (시간이 걸릴 수 있으므로 모바일에서는 로딩 표시 필요)
         data_collector.update_to_latest()
         return jsonify({"success": True, "message": "업데이트 완료"})
     except Exception as e:
