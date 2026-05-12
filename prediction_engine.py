@@ -10,13 +10,19 @@ class PredictionEngine:
         pass
         
     def get_historical_df(self):
-        """DB에서 데이터를 가져와 DataFrame으로 변환"""
-        # SQLAlchemy 모델은 앱 컨텍스트 내에서 호출되어야 함 (호출하는 곳에서 처리)
-        results = LottoResult.query.order_by(LottoResult.drw_no.asc()).all()
-        data = []
-        for r in results:
-            data.append([r.drw_no, r.num1, r.num2, r.num3, r.num4, r.num5, r.num6, r.bonus_num])
-        return pd.DataFrame(data, columns=['drw_no', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'bn'])
+        """DB에서 데이터를 가져와 DataFrame으로 변환 (오류 시 빈 DataFrame 반환)"""
+        try:
+            # SQLAlchemy 모델은 앱 컨텍스트 내에서 호출되어야 함
+            results = LottoResult.query.order_by(LottoResult.drw_no.asc()).all()
+            data = []
+            for r in results:
+                data.append([r.drw_no, r.num1, r.num2, r.num3, r.num4, r.num5, r.num6, r.bonus_num])
+            df = pd.DataFrame(data, columns=['drw_no', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'bn'])
+            print(f"[예측엔진] DB에서 {len(df)}개 회차 로드 완료")
+            return df
+        except Exception as e:
+            print(f"[예측엔진] DB 조회 오류: {e}")
+            return pd.DataFrame(columns=['drw_no', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'bn'])
 
     def analyze_patterns(self, df):
         """빈도 및 패턴 분석"""

@@ -61,19 +61,22 @@ def get_lotto_data(drw_no):
         print(f"  [기타 오류] {drw_no}회차: {e}", flush=True)
     return None
 
-def find_latest_draw():
-    """1160회부터 순차 탐색으로 최신 회차 확인 (탐색 범위 확대)"""
-    print("[탐색] 최신 회차 확인 중...")
-    # 최근 회차를 기준으로 탐색 시작점 조정
-    curr = 1100 
-    max_fail = 3
+def find_latest_draw(start_hint=1160):
+    """DB 마지막 회차(start_hint)부터 탐색하여 최신 회차 확인
+    
+    start_hint를 이용하면 불필요한 API 호출 없이 빠르게 최신 회차를 찾습니다.
+    예: DB 마지막 1222회 → 1223 시도 → 있으면 1223이 최신, 없으면 1222가 최신
+    """
+    print(f"[탐색] 최신 회차 확인 중... (시작점: {start_hint}회)")
+    curr = max(start_hint, 1)  # 최소 1회차 이상
+    max_fail = 3  # 연속 실패 허용 횟수
     fail_count = 0
     
     while fail_count < max_fail:
         data = get_lotto_data(curr + 1)
         if data:
             curr += 1
-            fail_count = 0 # 성공 시 초기화
+            fail_count = 0  # 성공 시 연속 실패 카운터 초기화
         else:
             fail_count += 1
             time.sleep(1.0)
@@ -81,12 +84,20 @@ def find_latest_draw():
     print(f"[탐색 완료] 최신 회차: {curr}회")
     return curr
 
-def collect(start_drw=1, years=None):
-    """지정한 범위의 데이터를 수집합니다. (안정성 강화)"""
+def collect(start_drw=1, years=None, search_from=None):
+    """지정한 범위의 데이터를 수집합니다.
+    
+    Args:
+        start_drw: 수집 시작 회차
+        years: 최근 N년치 수집 (start_drw 대신 사용)
+        search_from: 최신 회차 탐색 시작점 힌트 (없으면 start_drw-1 사용)
+    """
     conn = sqlite3.connect(DB_PATH)
     ensure_table(conn)
 
-    latest = find_latest_draw()
+    # 탐색 시작 힌트: 명시적으로 주어지면 그걸 쓰고, 아니면 start_drw-1 사용
+    hint = search_from if search_from is not None else max(start_drw - 1, 1)
+    latest = find_latest_draw(hint)
     if latest < 1:
         print("[오류] 최신 회차 탐색 실패. 네트워크를 확인해주세요.")
         conn.close()
@@ -159,7 +170,12 @@ def collect(start_drw=1, years=None):
     print(f"\n[수집 종료] 이번 작업으로 {saved}개 회차가 업데이트되었습니다.")
 
 def update_to_latest():
-    """DB의 마지막 회차부터 최신 회차까지 업데이트합니다."""
+    """DB의 마지막 회차부터 최신 회차까지 업데이트합니다.
+    
+    핵심 개선: last_saved를 find_latest_draw()의 힌트로 전달하여
+    불필요한 API 호출 없이 빠르게 최신 회차를 탐색합니다.
+    예) DB에 1222회까지 있으면 → 1223부터 탐색 → 단 1~3회 API 호출로 완료!
+    """
     conn = sqlite3.connect(DB_PATH)
     ensure_table(conn)
     
@@ -171,7 +187,8 @@ def update_to_latest():
     conn.close()
     
     print(f"[업데이트] DB 마지막 회차: {last_saved}회")
-    collect(start_drw=last_saved + 1)
+    # search_from=last_saved 로 전달 → 최신 회차 탐색을 last_saved 지점부터 시작
+    collect(start_drw=last_saved + 1, search_from=max(last_saved, 1))
 
 if __name__ == "__main__":
     # 실행 시 전체 데이터 수집 시도 (이미 있는 건 스킵됨)
