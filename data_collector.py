@@ -39,8 +39,24 @@ session.headers.update({
     'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
 })
 
+# 특정 회차 API 오류 시 사용할 수동 데이터 (예: 1223회차 보안 차단 대응)
+FALLBACK_DATA = {
+    1223: {
+        'drwNo': 1223, 'drwNoDate': '2026-05-09',
+        'drwtNo1': 16, 'drwtNo2': 18, 'drwtNo3': 20,
+        'drwtNo4': 32, 'drwtNo5': 33, 'drwtNo6': 39,
+        'bnusNo': 26, 'firstWinamnt': 1857554133, 'firstPrzwnerCo': 16,
+        'returnValue': 'success'
+    }
+}
+
 def get_lotto_data(drw_no):
-    """특정 회차 데이터 조회 (세션 사용 및 상세 에러 로깅)"""
+    """특정 회차 데이터 조회 (폴백 데이터 우선 확인)"""
+    # 1. 수동 폴백 데이터 확인
+    if drw_no in FALLBACK_DATA:
+        print(f"  [폴백] {drw_no}회차 데이터를 수동 엔진으로 로드합니다.")
+        return FALLBACK_DATA[drw_no]
+
     url = f"https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={drw_no}"
     try:
         # 타임아웃을 15초로 넉넉하게 설정
