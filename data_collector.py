@@ -46,19 +46,20 @@ def get_lotto_data(drw_no):
         # 타임아웃을 15초로 넉넉하게 설정
         resp = session.get(url, timeout=15)
         if resp.status_code != 200:
-            print(f"  [HTTP 오류] {drw_no}회차: Status {resp.status_code}", flush=True)
             return None
-        data = resp.json()
+            
+        # JSON 파싱 시도 (아직 추첨 전인 회차는 HTML이 올 수 있음)
+        try:
+            data = resp.json()
+        except Exception:
+            # 아직 추첨 전인 회차(1223회 등)는 조용히 무시
+            return None
+            
         if data.get('returnValue') == 'success':
             return data
-        else:
-            print(f"  [API 오류] {drw_no}회차: {data.get('returnValue')}", flush=True)
-    except requests.exceptions.SSLError as e:
-        print(f"  [SSL 오류] {drw_no}회차: {e}", flush=True)
-    except requests.exceptions.Timeout:
-        print(f"  [타임아웃] {drw_no}회차: 요청 시간이 초과되었습니다.", flush=True)
     except Exception as e:
-        print(f"  [기타 오류] {drw_no}회차: {e}", flush=True)
+        # 실제 네트워크 장애 등만 기록
+        print(f"  [네트워크 확인] {drw_no}회차 요청 실패: {e}", flush=True)
     return None
 
 def find_latest_draw(start_hint=1160):
