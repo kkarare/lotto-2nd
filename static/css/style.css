@@ -237,6 +237,35 @@ button {
 
 button:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
 
+/* 모두 지우기 버튼 (헤더용 소형) */
+.btn-danger-sm {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: 10px;
+    padding: 7px 13px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-danger-sm:hover { background: rgba(239, 68, 68, 0.12); }
+
+/* 단건 삭제 버튼 (카드 우상단) */
+.btn-delete-item {
+    background: transparent;
+    color: var(--text-sub);
+    border: 1px solid var(--gray);
+    border-radius: 8px;
+    padding: 4px 9px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1;
+}
+.btn-delete-item:hover { background: rgba(239, 68, 68, 0.15); color: var(--danger); border-color: var(--danger); }
+
+
 /* ===== 면책 조항 ===== */
 .disclaimer {
     font-size: 0.75rem;

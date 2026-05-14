@@ -169,6 +169,23 @@ def get_saved():
         })
     return jsonify({"success": True, "saved": results})
 
+@app.route('/api/saved/<int:item_id>', methods=['DELETE'])
+def delete_saved(item_id):
+    """저장된 번호 단건 삭제 API"""
+    item = SavedNumber.query.get(item_id)
+    if not item:
+        return jsonify({"success": False, "error": "Not found"}), 404
+    db.session.delete(item)
+    db.session.commit()
+    return jsonify({"success": True})
+
+@app.route('/api/saved/all', methods=['DELETE'])
+def delete_all_saved():
+    """저장된 번호 전체 삭제 API"""
+    SavedNumber.query.delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """통계 데이터 조회 API"""

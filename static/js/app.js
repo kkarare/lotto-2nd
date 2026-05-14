@@ -71,6 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnManualUpdate) {
             btnManualUpdate.addEventListener('click', manualUpdate);
         }
+
+        // 모두 지우기 버튼
+        const btnDeleteAll = document.getElementById('btn-delete-all');
+        if (btnDeleteAll) {
+            btnDeleteAll.addEventListener('click', deleteAllSaved);
+        }
     }
 
     // --- 탭 전환 ---
@@ -357,13 +363,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (allSaved.length > 0) {
             savedList.innerHTML = allSaved.map(item => `
-                <div style="background:var(--card-bg); border-radius:16px; padding:15px; margin-bottom:10px; border:1px solid var(--gray); position:relative;">
-                    ${item.is_local ? '<span style="position:absolute; top:10px; right:10px; font-size:0.65rem; color:var(--primary); background:var(--primary-light); padding:2px 5px; border-radius:4px;">내 폰 저장</span>' : ''}
+                <div style="background:var(--card-bg); border-radius:16px; padding:15px; margin-bottom:10px; border:1px solid var(--gray); position:relative;"
+                     data-id="${item.id}" data-local="${item.is_local ? 'true' : 'false'}">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-size:0.8rem; color:var(--text-sub);">📅 ${item.date}</span>
-                        <span style="font-size:0.78rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:3px 8px; border-radius:10px;">
-                            ${item.win_rank > 0 ? '🏆 ' + item.win_rank + '등 당첨!' : '⏳ 대기'}
-                        </span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.8rem; color:var(--text-sub);">📅 ${item.date}</span>
+                            ${item.is_local ? '<span style="font-size:0.65rem; color:var(--primary); background:var(--primary-light); padding:2px 5px; border-radius:4px;">내 폰 저장</span>' : ''}
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.78rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:3px 8px; border-radius:10px;">
+                                ${item.win_rank > 0 ? '🏆 ' + item.win_rank + '등 당첨!' : '⏳ 대기'}
+                            </span>
+                            <button class="btn-delete-item" onclick="deleteSavedItem(${item.id}, ${item.is_local ? 'true' : 'false'}, this)">🗑️</button>
+                        </div>
                     </div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                         ${item.numbers.map(n => `
@@ -453,6 +465,64 @@ document.addEventListener('DOMContentLoaded', () => {
             resultArea.innerHTML = '<p class="empty-msg">⚠️ 오류</p>';
         }
     }
+    // --- 저장 번호 단건 삭제 ---
+    window.deleteSavedItem = async function(itemId, isLocal, btnEl) {
+        if (!confirm('이 번호를 삭제할까요?')) return;
+
+        const card = btnEl.closest('[data-id]');
+
+        // 로컬 저장 항목 삭제
+        if (isLocal) {
+            const localSaved = JSON.parse(localStorage.getItem('lucky_saved_numbers') || '[]');
+            const filtered = localSaved.filter(i => i.id !== itemId);
+            localStorage.setItem('lucky_saved_numbers', JSON.stringify(filtered));
+            card && card.remove();
+            showToast('🗑️ 삭제되었습니다.');
+            checkEmptySavedList();
+            return;
+        }
+
+        // 서버 저장 항목 삭제
+        try {
+            const res = await fetch(`/api/saved/${itemId}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                card && card.remove();
+                showToast('🗑️ 삭제되었습니다.');
+                checkEmptySavedList();
+            } else {
+                showToast('❌ 삭제 실패');
+            }
+        } catch (e) {
+            showToast('❌ 서버 연결 오류');
+        }
+    };
+
+    function checkEmptySavedList() {
+        const savedList = document.getElementById('saved-list');
+        if (savedList && savedList.querySelectorAll('[data-id]').length === 0) {
+            savedList.innerHTML = '<p class="empty-msg">저장된 번호가 없습니다.</p>';
+        }
+    }
+
+    // --- 저장 번호 전체 삭제 ---
+    async function deleteAllSaved() {
+        if (!confirm('저장된 번호를 모두 삭제할까요?\n이 작업은 되돌릴 수 없습니다.')) return;
+
+        // 로컬스토리지 전체 삭제
+        localStorage.removeItem('lucky_saved_numbers');
+
+        // 서버 전체 삭제
+        try {
+            await fetch('/api/saved/all', { method: 'DELETE' });
+        } catch (e) {
+            console.warn('서버 전체 삭제 실패 (로컬은 삭제됨)');
+        }
+
+        document.getElementById('saved-list').innerHTML = '<p class="empty-msg">저장된 번호가 없습니다.</p>';
+        showToast('🗑️ 모두 삭제되었습니다.');
+    }
+
     // --- 엑셀 업로드 ---
     async function uploadExcel() {
         const fileInput = document.getElementById('excel-file');

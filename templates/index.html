@@ -100,7 +100,10 @@
 
             <!-- 저장함 탭 -->
             <section id="tab-saved" class="tab-content">
-                <h3>💾 내 저장 번호</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="margin:0;">💾 내 저장 번호</h3>
+                    <button id="btn-delete-all" class="btn-danger-sm">🗑️ 모두 지우기</button>
+                </div>
                 <div id="saved-list" class="list-container">
                     <p class="empty-msg">저장된 번호가 없습니다.</p>
                 </div>

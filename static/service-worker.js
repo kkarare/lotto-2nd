@@ -3,7 +3,7 @@
    오프라인 캐싱으로 기본 화면을 유지합니다.
    ==================================================== */
 
-const CACHE_NAME = 'lucky-bright-v7'; // v7: 재시도 로직 적용, 예측신뢰도 오류 메시지 수정
+const CACHE_NAME = 'lucky-bright-v8'; // v8: 저장 번호 단건/전체 삭제 기능 추가
 const ASSETS_TO_CACHE = [
   '/',
   '/static/css/style.css',
