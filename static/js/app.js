@@ -175,60 +175,63 @@ document.addEventListener('DOMContentLoaded', () => {
         genDisplay.innerHTML = '<div class="ball-placeholder">🤖 AI 분석 중...</div>';
         document.getElementById('prediction-info').style.display = 'none';
 
-        // 서버 요청 시도 (최대 2회 재시도 - Railway 슬립 대응)
-        let serverResult = null;
-        for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15초 타임아웃
+        try {
+            // 서버 요청 시도 (최대 2회 재시도 - Railway 슬립 대응)
+            let serverResult = null;
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15초 타임아웃
 
-                const res = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ include: state.includeNums, exclude: state.excludeNums }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
+                    const res = await fetch('/api/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ include: state.includeNums, exclude: state.excludeNums }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
 
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-                const data = await res.json();
-                if (data.success && data.combinations && data.combinations.length > 0) {
-                    serverResult = data.combinations[0];
-                    break; // 성공 → 루프 탈출
-                }
-            } catch (e) {
-                console.warn(`[AI 생성 시도 ${attempt + 1}/2] 실패:`, e.message);
-                if (attempt === 0) {
-                    // 1차 실패 시 2초 대기 후 재시도 (Railway 웜업 대기)
-                    genDisplay.innerHTML = '<div class="ball-placeholder">🔄 서버 재연결 중...</div>';
-                    await new Promise(r => setTimeout(r, 2000));
+                    const data = await res.json();
+                    if (data.success && data.combinations && data.combinations.length > 0) {
+                        serverResult = data.combinations[0];
+                        break; // 성공 → 루프 탈출
+                    }
+                } catch (e) {
+                    console.warn(`[AI 생성 시도 ${attempt + 1}/2] 실패:`, e.message);
+                    if (attempt === 0) {
+                        // 1차 실패 시 2초 대기 후 재시도 (Railway 웜업 대기)
+                        genDisplay.innerHTML = '<div class="ball-placeholder">🔄 서버 재연결 중...</div>';
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
                 }
             }
+
+            if (serverResult) {
+                // 서버 AI 분석 성공
+                renderGenerated(serverResult);
+            } else {
+                // 2회 모두 실패 → 로컬 폴백
+                console.error('[AI 생성] 서버 2회 요청 실패, 로컬 알고리즘 사용');
+                const localNums = generateLocalNumbers(state.includeNums, state.excludeNums);
+                const isActuallyOffline = !state.status.online;
+                const errorMsg = isActuallyOffline
+                    ? '⚠️ 오프라인 모드입니다. 서버 연결 시 더 정밀한 AI 분석이 가능합니다.'
+                    : '⚡ 빠른 생성 모드로 번호를 만들었습니다. 잠시 후 다시 시도하면 AI 정밀 분석이 적용됩니다.';
+
+                const localResult = {
+                    numbers: localNums,
+                    score: Math.floor(Math.random() * 11) + 85, // 85~95점으로 상향
+                    analysis: errorMsg
+                };
+                renderGenerated(localResult);
+                showToast(isActuallyOffline ? '⚠️ 오프라인 모드로 생성' : '⚡ 빠른 생성 모드 (서버 재연결 중)');
+            }
+        } finally {
+            // 성공/실패/예외 어떤 경우에도 버튼 반드시 재활성화
+            btnGenerate.disabled = false;
         }
-
-        if (serverResult) {
-            // 서버 AI 분석 성공
-            renderGenerated(serverResult);
-        } else {
-            // 2회 모두 실패 → 로컬 폴백
-            console.error('[AI 생성] 서버 2회 요청 실패, 로컬 알고리즘 사용');
-            const localNums = generateLocalNumbers(state.includeNums, state.excludeNums);
-            const isActuallyOffline = !state.status.online;
-            const errorMsg = isActuallyOffline
-                ? '⚠️ 오프라인 모드입니다. 서버 연결 시 더 정밀한 AI 분석이 가능합니다.'
-                : '⚡ 빠른 생성 모드로 번호를 만들었습니다. 잠시 후 다시 시도하면 AI 정밀 분석이 적용됩니다.';
-
-            const localResult = {
-                numbers: localNums,
-                score: Math.floor(Math.random() * 11) + 85, // 85~95점으로 상향
-                analysis: errorMsg
-            };
-            renderGenerated(localResult);
-            showToast(isActuallyOffline ? '⚠️ 오프라인 모드로 생성' : '⚡ 빠른 생성 모드 (서버 재연결 중)');
-        }
-
-        btnGenerate.disabled = false;
     }
 
     function renderGenerated(data) {

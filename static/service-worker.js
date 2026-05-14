@@ -3,7 +3,7 @@
    오프라인 캐싱으로 기본 화면을 유지합니다.
    ==================================================== */
 
-const CACHE_NAME = 'lucky-bright-v8'; // v8: 저장 번호 단건/전체 삭제 기능 추가
+const CACHE_NAME = 'lucky-bright-v9'; // v9: 번호 생성 버튼 항상 활성화 보장 (try/finally)
 const ASSETS_TO_CACHE = [
   '/',
   '/static/css/style.css',
