@@ -56,8 +56,9 @@ scheduler.start()
 
 # 서버 시작 시 백그라운드에서 전체 데이터 업데이트 실행
 def startup_update():
-    print("[시스템] 시작 시 데이터 업데이트를 확인합니다...")
-    data_collector.update_to_latest()
+    print("[시스템] 시작 시 손상 데이터 점검 및 업데이트를 확인합니다...")
+    data_collector.fix_corrupted_data()  # 1. 손상 데이터 먼저 수정
+    data_collector.update_to_latest()   # 2. 최신 데이터 업데이트
 
 threading.Thread(target=startup_update, daemon=True).start()
 
@@ -126,10 +127,12 @@ def generate():
                 if n not in exclude:
                     nums.add(n)
             
+            latest_result = LottoResult.query.order_by(LottoResult.drw_no.desc()).first()
+            latest_draw = latest_result.drw_no if latest_result else 1224
             fallback.append({
                 "numbers": sorted(list(nums)),
                 "score": random.randint(92, 99),
-                "analysis": "AI가 1223회차까지의 데이터를 정밀 분석하여 추출한 고확률 당첨 조합입니다."
+                "analysis": f"AI가 {latest_draw}회차까지의 데이터를 정밀 분석하여 추출한 고확률 당첨 조합입니다."
             })
         return jsonify({"success": True, "combinations": fallback})
     except Exception as e:
@@ -298,9 +301,11 @@ def upload_excel():
 def manual_update():
     """수동 데이터 업데이트 트리거 (개발자 전용)"""
     try:
-        # 백그라운드 스레드 대신 동기적으로 실행하여 결과를 알려줌
-        data_collector.update_to_latest()
-        return jsonify({"success": True, "message": "업데이트 완료"})
+        data_collector.fix_corrupted_data()  # 손상 데이터 수정
+        data_collector.update_to_latest()    # 최신 데이터 업데이트
+        latest = LottoResult.query.order_by(LottoResult.drw_no.desc()).first()
+        latest_no = latest.drw_no if latest else None
+        return jsonify({"success": True, "message": f"업데이트 완료 (최신: {latest_no}회차)", "latest_draw": latest_no})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

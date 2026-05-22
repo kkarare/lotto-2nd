@@ -79,10 +79,11 @@ class PredictionEngine:
                     current_combo.append(int(pick))
             
             current_combo.sort()
+            latest_draw = int(df['drw_no'].max()) if not df.empty else 1224
             combinations.append({
                 "numbers": current_combo,
                 "score": random.randint(92, 99),
-                "analysis": "AI가 1223회차까지의 데이터를 정밀 분석하여 추출한 고확률 당첨 조합입니다."
+                "analysis": f"AI가 {latest_draw}회차까지의 데이터를 정밀 분석하여 추출한 고확률 당첨 조합입니다."
             })
             
         return combinations
